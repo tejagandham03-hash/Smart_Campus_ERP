@@ -77,6 +77,22 @@ app.use('/api/materials', require('./routes/material'));
 app.use('/api/admin/import', require('./routes/adminImport'));
 app.use('/api/queries', require('./routes/query'));
 
+// Service information routes
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Smart Campus ERP API is running',
+    health: '/api/health',
+  });
+});
+app.get('/api', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Smart Campus ERP API is running',
+    health: '/api/health',
+  });
+});
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.status(200).json({
