@@ -24,11 +24,9 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isLoginRequest = error.config?.url?.endsWith('/auth/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
       delete API.defaults.headers.Authorization;
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
