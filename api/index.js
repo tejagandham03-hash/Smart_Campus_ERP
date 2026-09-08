@@ -14,5 +14,8 @@ module.exports = async (req, res) => {
   }
 
   await connectionPromise;
+  if (req.url !== '/' && !req.url.startsWith('/api/')) {
+    req.url = `/api${req.url}`;
+  }
   return app(req, res);
 };
