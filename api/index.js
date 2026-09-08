@@ -2,12 +2,13 @@ require('dotenv').config({ path: './server/.env' });
 
 const app = require('../server/src/app');
 const connectDB = require('../server/src/config/database');
+const ensureAdmin = require('../server/src/config/ensureAdmin');
 
 let connectionPromise;
 
 module.exports = async (req, res) => {
   if (connectionPromise === undefined) {
-    connectionPromise = connectDB().catch((error) => {
+    connectionPromise = connectDB().then(ensureAdmin).catch((error) => {
       connectionPromise = undefined;
       throw error;
     });

@@ -1,11 +1,12 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
+const ensureAdmin = require('./config/ensureAdmin');
 
 const PORT = process.env.PORT || 5000;
 
 // Connect to database
-connectDB().then(() => {
+connectDB().then(ensureAdmin).then(() => {
   // Start server
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
