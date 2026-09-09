@@ -32,10 +32,24 @@ exports.createMaterial = async (req, res, next) => {
     if (!faculty) return res.status(422).json({ success: false, message: 'No faculty profile is linked to this account' });
     const material = await Material.create({
       title, description, course, subject, semester: Number(semester), faculty: faculty._id,
-      fileUrl: `/uploads/materials/${req.file.filename}`, fileName: req.file.originalname,
+      fileUrl: '/api/materials/file/pending', fileName: req.file.originalname,
       mimeType: req.file.mimetype, size: req.file.size,
+      fileData: req.file.buffer,
     });
+    material.fileUrl = `/api/materials/${material._id}/file`;
+    await material.save();
+    material.fileData = undefined;
     res.status(201).json({ success: true, message: 'Material uploaded successfully', data: await material.populate('course subject faculty') });
+  } catch (error) { next(error); }
+};
+
+exports.getMaterialFile = async (req, res, next) => {
+  try {
+    const material = await Material.findById(req.params.id).select('+fileData');
+    if (!material || !material.fileData) return res.status(404).json({ success: false, message: 'Material file not found' });
+    res.setHeader('Content-Type', material.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${material.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}"`);
+    res.send(material.fileData);
   } catch (error) { next(error); }
 };
 

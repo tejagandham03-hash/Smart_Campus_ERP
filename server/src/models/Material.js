@@ -11,6 +11,7 @@ const materialSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
   mimeType: String,
   size: Number,
+  fileData: { type: Buffer, select: false },
 }, { timestamps: true });
 
 materialSchema.index({ course: 1, subject: 1, semester: 1 });
