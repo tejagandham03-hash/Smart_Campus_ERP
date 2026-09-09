@@ -12,14 +12,19 @@ export default function StudentMaterials() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileResponse, materialsResponse] = await Promise.all([
+        const [profileResult, materialsResult] = await Promise.allSettled([
           API.get('/user/profile'),
           API.get('/materials'),
         ]);
-        setStudentData(profileResponse.data?.data?.additionalData || null);
-        setMaterials(materialsResponse.data?.data || []);
-      } catch (error) {
-        setMessage(error.response?.data?.message || 'Unable to load learning materials.');
+        if (profileResult.status === 'fulfilled') {
+          setStudentData(profileResult.value.data?.data?.additionalData || null);
+        }
+        if (materialsResult.status === 'fulfilled') {
+          setMaterials(materialsResult.value.data?.data || []);
+        } else {
+          const error = materialsResult.reason;
+          setMessage(error.response?.data?.message || 'Unable to load learning materials.');
+        }
       } finally {
         setLoading(false);
       }

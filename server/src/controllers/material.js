@@ -17,6 +17,7 @@ exports.getMaterials = async (req, res, next) => {
     if (semester) query.semester = Number(semester);
     const materials = await Material.find(query)
       .populate('course subject faculty')
+      .populate({ path: 'faculty', populate: { path: 'userId', select: 'name' } })
       .sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: materials });
   } catch (error) { next(error); }

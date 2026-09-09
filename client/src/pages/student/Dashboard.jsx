@@ -54,8 +54,10 @@ const StudentDashboard = () => {
     let active = true;
     const fetchAllDynamicData = async () => {
       setLoading(true);
-      const profileRes = await API.get('/user/profile');
-      const student = profileRes.data?.data?.additionalData;
+      const profileRequest = await Promise.allSettled([API.get('/user/profile')]);
+      const student = profileRequest[0].status === 'fulfilled'
+        ? profileRequest[0].value.data?.data?.additionalData
+        : null;
       if (!active) return;
       setStudentData(student);
       const courseId = student?.course?._id;
@@ -70,7 +72,12 @@ const StudentDashboard = () => {
         API.get('/notifications?limit=4'),
       ]);
       const data = requests.map((request) => request.status === 'fulfilled' ? request.value.data?.data : null);
-      if (data[0]) setAttendanceStats(data[0]);
+      if (data[0]) setAttendanceStats({
+        percentage: Number(data[0].percentage || 0),
+        total: Number(data[0].total || 0),
+        present: Number(data[0].present || 0),
+        absent: Number(data[0].absent || 0),
+      });
       const feeList = data[1] || [];
       setFees(feeList);
       if (feeList.length) {
