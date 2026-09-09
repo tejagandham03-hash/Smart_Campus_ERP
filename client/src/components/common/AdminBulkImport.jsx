@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import API from '../../services/api';
 
 export default function AdminBulkImport({ type }) {
@@ -7,10 +8,17 @@ export default function AdminBulkImport({ type }) {
   const [message, setMessage] = useState('');
   const label = type === 'faculty' ? 'faculty' : 'student';
 
-  const downloadTemplate = async () => {
+  const downloadTemplate = () => {
     try {
-      const response = await API.get(`/admin/import/template/${type}`, { responseType: 'blob' });
-      const url = URL.createObjectURL(response.data);
+      const headers = type === 'faculty'
+        ? ['Name', 'Email', 'Password', 'Phone', 'Employee ID', 'Department Code', 'Designation', 'Qualification', 'Joining Date']
+        : ['Name', 'Email', 'Password', 'Phone', 'Student ID', 'Department Code', 'Course Code', 'Semester', 'Section', 'Assigned Faculty IDs'];
+      const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+      worksheet['!cols'] = headers.map(() => ({ wch: 22 }));
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, type === 'faculty' ? 'Faculty' : 'Students');
+      const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+      const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
       const link = document.createElement('a');
       link.href = url;
       link.download = `${label}-import-template.xlsx`;
@@ -19,8 +27,8 @@ export default function AdminBulkImport({ type }) {
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       setMessage('Template downloaded.');
-    } catch (error) {
-      setMessage(error.response?.data?.message || 'Template download failed.');
+    } catch {
+      setMessage('Template download failed.');
     }
   };
 
