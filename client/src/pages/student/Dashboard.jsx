@@ -51,10 +51,12 @@ const StudentDashboard = () => {
   };
 
   useEffect(() => {
+    let active = true;
     const fetchAllDynamicData = async () => {
       setLoading(true);
       const profileRes = await API.get('/user/profile');
       const student = profileRes.data?.data?.additionalData;
+      if (!active) return;
       setStudentData(student);
       const courseId = student?.course?._id;
 
@@ -96,10 +98,16 @@ const StudentDashboard = () => {
       setLoading(false);
     };
 
-    fetchAllDynamicData().catch((error) => {
+    const refresh = () => fetchAllDynamicData().catch((error) => {
       console.error('Error loading dashboard data', error);
       setLoading(false);
     });
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+    };
   }, []);
 
   const currentDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
