@@ -70,7 +70,7 @@ exports.createExamination = async (req, res, next) => {
       totalMarks,
     });
 
-    const populated = await examination.populate('course').populate('subject');
+    const populated = await examination.populate(['course', 'subject']);
 
     res.status(201).json({
       success: true,

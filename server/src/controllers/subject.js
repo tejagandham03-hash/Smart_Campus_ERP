@@ -58,7 +58,7 @@ exports.createSubject = async (req, res, next) => {
       description,
     });
 
-    const populated = await subject.populate('course').populate('faculty');
+    const populated = await subject.populate(['course', 'faculty']);
 
     res.status(201).json({
       success: true,
