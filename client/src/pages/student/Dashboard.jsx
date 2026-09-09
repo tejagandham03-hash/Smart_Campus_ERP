@@ -57,7 +57,7 @@ const StudentDashboard = () => {
       const profileRequest = await Promise.allSettled([API.get('/user/profile')]);
       const student = profileRequest[0].status === 'fulfilled'
         ? profileRequest[0].value.data?.data?.additionalData
-        : null;
+        : user?.additionalData || null;
       if (!active) return;
       setStudentData(student);
       const courseId = student?.course?._id;

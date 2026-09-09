@@ -178,6 +178,9 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    const additionalData = user.role === ROLES.STUDENT
+      ? await Student.findOne({ userId: user._id }).populate(['department', 'course'])
+      : null;
     const token = generateToken(user._id);
 
     res.status(200).json({
@@ -190,6 +193,7 @@ exports.login = async (req, res, next) => {
           name: user.name,
           email: user.email,
           role: user.role,
+          additionalData,
         },
       },
     });
@@ -201,10 +205,13 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).populate('department');
+    const additionalData = user.role === ROLES.STUDENT
+      ? await Student.findOne({ userId: user._id }).populate(['department', 'course'])
+      : null;
 
     res.status(200).json({
       success: true,
-      data: user,
+      data: { ...user.toObject(), additionalData },
     });
   } catch (error) {
     next(error);
