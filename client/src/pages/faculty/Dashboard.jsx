@@ -10,18 +10,17 @@ const FacultyDashboard = () => {
 
 	useEffect(() => {
 		const load = async () => {
-			try {
-				const [profileRes, studentsRes, subjectsRes, examinationsRes, timetableRes] = await Promise.all([
-					API.get('/user/profile'), API.get('/students?limit=1'), API.get('/subjects'), API.get('/examinations'), API.get('/timetable'),
-				]);
-				setProfile(profileRes.data?.data?.additionalData);
-				setCounts({
-					students: studentsRes.data?.pagination?.total ?? studentsRes.data?.data?.length ?? 0,
-					subjects: subjectsRes.data?.data?.length ?? 0,
-					examinations: examinationsRes.data?.data?.length ?? 0,
-					timetable: timetableRes.data?.data?.length ?? 0,
-				});
-			} finally { setLoading(false); }
+			const [profileRes, studentsRes, subjectsRes, examinationsRes, timetableRes] = await Promise.allSettled([
+				API.get('/user/profile'), API.get('/students?limit=1'), API.get('/subjects'), API.get('/examinations?limit=1'), API.get('/timetable'),
+			]);
+			if (profileRes.status === 'fulfilled') setProfile(profileRes.value.data?.data?.additionalData);
+			setCounts({
+				students: studentsRes.status === 'fulfilled' ? studentsRes.value.data?.pagination?.total ?? studentsRes.value.data?.data?.length ?? 0 : 0,
+				subjects: subjectsRes.status === 'fulfilled' ? subjectsRes.value.data?.pagination?.total ?? subjectsRes.value.data?.data?.length ?? 0 : 0,
+				examinations: examinationsRes.status === 'fulfilled' ? examinationsRes.value.data?.pagination?.total ?? examinationsRes.value.data?.data?.length ?? 0 : 0,
+				timetable: timetableRes.status === 'fulfilled' ? timetableRes.value.data?.pagination?.total ?? timetableRes.value.data?.data?.length ?? 0 : 0,
+			});
+			setLoading(false);
 		};
 		load().catch(() => setLoading(false));
 		window.addEventListener('focus', load);
