@@ -99,7 +99,7 @@ export default function RoleWorkspace({ resource }) {
   useEffect(() => { loadRecords(); }, [resource, search]);
 
   useEffect(() => {
-    if (resource !== 'faculty') return;
+    if (resource !== 'students' && resource !== 'faculty') return;
     API.get('/departments?status=active')
       .then((response) => setDepartments(response.data?.data || []))
       .catch((error) => addNotification(error.response?.data?.message || 'Unable to load departments.', 'error'));
@@ -148,7 +148,7 @@ export default function RoleWorkspace({ resource }) {
         {(resource === 'students' || resource === 'faculty') && <AdminBulkImport type={resource === 'students' ? 'students' : 'faculty'} />}
 
         {showForm && <form onSubmit={createRecord} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-2">
-          {config.fields.map(([key, label, type]) => <label key={key} className="text-sm font-semibold text-slate-700 dark:text-slate-200">{label}{resource === 'faculty' && key === 'department' ? <select required value={form[key] || ''} onChange={(event) => setForm({ ...form, [key]: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"><option value="">Select department</option>{departments.map((department) => <option key={department._id} value={department._id}>{department.code} - {department.name}</option>)}</select> : <input required={!['description', 'phone', 'assignedFaculty'].includes(key)} type={type} value={form[key] || ''} onChange={(event) => setForm({ ...form, [key]: type === 'number' ? Number(event.target.value) : event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 font-normal outline-none focus:border-cyan-500 dark:border-slate-700" />}</label>)}
+          {config.fields.map(([key, label, type]) => <label key={key} className="text-sm font-semibold text-slate-700 dark:text-slate-200">{label}{(resource === 'students' || resource === 'faculty') && key === 'department' ? <select required value={form[key] || ''} onChange={(event) => setForm({ ...form, [key]: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"><option value="">Select department</option>{departments.map((department) => <option key={department._id} value={department._id}>{department.code} - {department.name}</option>)}</select> : <input required={!['description', 'phone', 'assignedFaculty'].includes(key)} type={type} value={form[key] || ''} onChange={(event) => setForm({ ...form, [key]: type === 'number' ? Number(event.target.value) : event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 font-normal outline-none focus:border-cyan-500 dark:border-slate-700" />}</label>)}
           <div className="flex items-end gap-2"><button disabled={saving} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-cyan-400 dark:text-slate-950">{saving ? 'Saving...' : 'Save record'}</button><button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold dark:border-slate-700">Cancel</button></div>
         </form>}
 
