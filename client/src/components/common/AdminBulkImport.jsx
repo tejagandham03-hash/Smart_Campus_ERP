@@ -8,13 +8,20 @@ export default function AdminBulkImport({ type }) {
   const label = type === 'faculty' ? 'faculty' : 'student';
 
   const downloadTemplate = async () => {
-    const response = await API.get(`/admin/import/template/${type}`, { responseType: 'blob' });
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${label}-import-template.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const response = await API.get(`/admin/import/template/${type}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${label}-import-template.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage('Template downloaded.');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Template download failed.');
+    }
   };
 
   const upload = async (event) => {
