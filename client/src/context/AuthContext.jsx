@@ -11,10 +11,21 @@ export const AuthProvider = ({ children }) => {
   // Load token from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('sessionUser');
     if (savedToken) {
       setToken(savedToken);
       API.defaults.headers.Authorization = `Bearer ${savedToken}`;
-      fetchUser(savedToken);
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+          setIsAuthLoading(false);
+        } catch {
+          localStorage.removeItem('sessionUser');
+          fetchUser(savedToken);
+        }
+      } else {
+        fetchUser(savedToken);
+      }
     } else {
       setIsAuthLoading(false);
     }
@@ -26,10 +37,14 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       setUser(response.data.data);
+      localStorage.setItem('sessionUser', JSON.stringify(response.data.data));
     } catch (error) {
-      console.error('Failed to fetch user:', error);
-      localStorage.removeItem('token');
-      setToken(null);
+      if (error.response?.status === 401) {
+        console.error('Failed to fetch user:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('sessionUser');
+        setToken(null);
+      }
     } finally {
       setIsAuthLoading(false);
     }
@@ -42,6 +57,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
       localStorage.setItem('token', newToken);
+      localStorage.setItem('sessionUser', JSON.stringify(userData));
       API.defaults.headers.Authorization = `Bearer ${newToken}`;
       return { success: true, message: response.data.message };
     } catch (error) {
@@ -59,6 +75,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
       localStorage.setItem('token', newToken);
+      localStorage.setItem('sessionUser', JSON.stringify(userData));
       API.defaults.headers.Authorization = `Bearer ${newToken}`;
       return { success: true, message: response.data.message };
     } catch (error) {
@@ -73,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('sessionUser');
     delete API.defaults.headers.Authorization;
   };
 
