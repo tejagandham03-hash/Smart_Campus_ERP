@@ -52,114 +52,54 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     const fetchAllDynamicData = async () => {
-      try {
-        setLoading(true);
+      setLoading(true);
+      const profileRes = await API.get('/user/profile');
+      const student = profileRes.data?.data?.additionalData;
+      setStudentData(student);
+      const courseId = student?.course?._id;
 
-        // 1. Fetch user profile and student record
-        const profileRes = await API.get('/user/profile');
-        const student = profileRes.data?.data?.additionalData;
-        setStudentData(student);
-
-        const studentId = student?._id;
-        const courseId = student?.course?._id;
-        const currentSem = student?.semester || 1;
-
-        // 2. Fetch real dynamic attendance for this student
-        if (studentId) {
-          try {
-            const attReportRes = await API.get(`/attendance/report/summary?student=${studentId}`);
-            if (attReportRes.data?.data) {
-              setAttendanceStats(attReportRes.data.data);
-            }
-          } catch (e) {
-            console.error('Attendance fetch error', e);
-          }
-
-          // 3. Fetch real dynamic fees for this student
-          try {
-            const feeRes = await API.get(`/fees?student=${studentId}`);
-            const feeList = feeRes.data?.data || [];
-            setFees(feeList);
-
-            if (feeList.length > 0) {
-              const totalAmt = feeList.reduce((acc, f) => acc + (f.amount || 0), 0);
-              const paidAmt = feeList.reduce((acc, f) => acc + (f.paidAmount || 0), 0);
-              const due = totalAmt - paidAmt;
-              const status = due === 0 ? 'Paid' : paidAmt > 0 ? 'Partially Paid' : 'Pending';
-              setFeeStats({ totalAmount: totalAmt, paidAmount: paidAmt, dueAmount: due, status });
-            }
-          } catch (e) {
-            console.error('Fee fetch error', e);
-          }
-
-          // 4. Fetch real dynamic results & calculate real CGPA
-          try {
-            const resultRes = await API.get(`/results?student=${studentId}&limit=500`);
-            const resultList = resultRes.data?.data || [];
-            setResults(resultList);
-
-            if (resultList.length > 0) {
-              let totalPts = 0;
-              let totalCredits = 0;
-              resultList.forEach((r) => {
-                const gp = gradePoints[r.grade] ?? Math.min(10, Math.round(((r.marks || 0) / (r.maxMarks || 100)) * 10));
-                const credits = r.subject?.credits || 1;
-                totalPts += gp * credits;
-                totalCredits += credits;
-              });
-              const calculatedCgpa = (totalPts / totalCredits).toFixed(2);
-              setCgpaStats({
-                cgpa: calculatedCgpa,
-                totalExams: resultList.length,
-                distinction: parseFloat(calculatedCgpa) >= 8.0,
-              });
-            }
-          } catch (e) {
-            console.error('Results fetch error', e);
-          }
-        }
-
-        // 5. Fetch real dynamic Timetable for course / semester
-        try {
-          const ttQuery = courseId ? `?course=${courseId}` : '';
-          const ttRes = await API.get(`/timetable${ttQuery}`);
-          setTimetable(ttRes.data?.data || []);
-        } catch (e) {
-          console.error('Timetable fetch error', e);
-        }
-
-        // 6. Fetch real dynamic Examinations
-        try {
-          const examQuery = courseId ? `?course=${courseId}` : '';
-          const examRes = await API.get(`/examinations${examQuery}`);
-          setExaminations(examRes.data?.data || []);
-        } catch (e) {
-          console.error('Exams fetch error', e);
-        }
-
-        // 7. Fetch real dynamic Placements
-        try {
-          const placementRes = await API.get('/placements');
-          setPlacements(placementRes.data?.data || []);
-        } catch (e) {
-          console.error('Placement fetch error', e);
-        }
-
-        // 8. Fetch real notifications
-        try {
-          const notifRes = await API.get('/notifications?limit=4');
-          setNotifications(notifRes.data?.data || []);
-        } catch (e) {
-          console.error('Notification fetch error', e);
-        }
-      } catch (err) {
-        console.error('Error loading dashboard data', err);
-      } finally {
-        setLoading(false);
+      const requests = await Promise.allSettled([
+        API.get('/attendance/report/summary'),
+        API.get('/fees'),
+        API.get('/results?limit=500'),
+        API.get(courseId ? `/timetable?course=${courseId}` : '/timetable'),
+        API.get(courseId ? `/examinations?course=${courseId}&limit=500` : '/examinations?limit=500'),
+        API.get('/placements'),
+        API.get('/notifications?limit=4'),
+      ]);
+      const data = requests.map((request) => request.status === 'fulfilled' ? request.value.data?.data : null);
+      if (data[0]) setAttendanceStats(data[0]);
+      const feeList = data[1] || [];
+      setFees(feeList);
+      if (feeList.length) {
+        const totalAmount = feeList.reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+        const paidAmount = feeList.reduce((sum, fee) => sum + Number(fee.paidAmount || 0), 0);
+        setFeeStats({ totalAmount, paidAmount, dueAmount: totalAmount - paidAmount, status: totalAmount === paidAmount ? 'Paid' : paidAmount ? 'Partially Paid' : 'Pending' });
+      } else {
+        setFeeStats({ totalAmount: 0, paidAmount: 0, dueAmount: 0, status: 'No fees' });
       }
+      const resultList = data[2] || [];
+      setResults(resultList);
+      if (resultList.length) {
+        const total = resultList.reduce((sum, result) => {
+          const point = gradePoints[result.grade] ?? Math.min(10, Math.round(((result.marks || 0) / (result.maxMarks || 100)) * 10));
+          return sum + point * (result.subject?.credits || 1);
+        }, 0);
+        const credits = resultList.reduce((sum, result) => sum + (result.subject?.credits || 1), 0);
+        const cgpa = (total / credits).toFixed(2);
+        setCgpaStats({ cgpa, totalExams: resultList.length, distinction: Number(cgpa) >= 8 });
+      }
+      setTimetable(data[3] || []);
+      setExaminations(data[4] || []);
+      setPlacements(data[5] || []);
+      setNotifications(data[6] || []);
+      setLoading(false);
     };
 
-    fetchAllDynamicData();
+    fetchAllDynamicData().catch((error) => {
+      console.error('Error loading dashboard data', error);
+      setLoading(false);
+    });
   }, []);
 
   const currentDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
