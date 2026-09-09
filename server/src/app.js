@@ -15,10 +15,10 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://smart-campus-erp-five.vercel.app',
   'http://localhost:5173',
-].filter(Boolean);
+].filter(Boolean).map((origin) => origin.replace(/\/$/, ''));
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true);
     return callback(new Error('Origin not allowed by CORS'));
   },
   credentials: true,
