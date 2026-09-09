@@ -19,7 +19,7 @@ exports.getAttendance = async (req, res, next) => {
       const assigned = await Student.find({ assignedFaculty: faculty?._id }).select('_id');
       query.student = { $in: assigned.map((item) => item._id) };
     }
-    if (student) query.student = student;
+    if (student && req.user.role !== 'student') query.student = student;
     if (subject) query.subject = subject;
     if (date) {
       const startDate = new Date(date);

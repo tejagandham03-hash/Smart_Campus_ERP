@@ -5,7 +5,14 @@ exports.getNotifications = async (req, res, next) => {
     const { type, targetRole, page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
-    const query = {};
+    const query = {
+      $or: [
+        { targetRole: req.user.role },
+        { targetRole: { $exists: false } },
+        { targetRole: null },
+        { targetUsers: req.user._id },
+      ],
+    };
     if (type) query.type = type;
     if (targetRole) query.targetRole = targetRole;
 

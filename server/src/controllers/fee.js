@@ -19,7 +19,7 @@ exports.getFees = async (req, res, next) => {
       const assigned = await Student.find({ assignedFaculty: faculty?._id }).select('_id');
       query.student = { $in: assigned.map((item) => item._id) };
     }
-    if (student) query.student = student;
+    if (student && req.user.role !== 'student') query.student = student;
     if (status) query.status = status;
 
     const total = await Fee.countDocuments(query);
@@ -114,6 +114,10 @@ exports.updateFee = async (req, res, next) => {
     const { paidAmount, status, paymentDate, transactionId } = req.body;
     const existing = await Fee.findById(req.params.id).select('student');
     if (!existing) return res.status(404).json({ success: false, message: 'Fee record not found' });
+    if (req.user.role === 'student') {
+      const student = await Student.findOne({ userId: req.user._id }).select('_id');
+      if (!student || String(existing.student) !== String(student._id)) return res.status(403).json({ success: false, message: 'You cannot update this fee record' });
+    }
     if (req.user.role === 'faculty') {
       const faculty = await Faculty.findOne({ userId: req.user._id }).select('_id');
       if (!(await Student.exists({ _id: existing.student, assignedFaculty: faculty?._id }))) return res.status(403).json({ success: false, message: 'You are not assigned to this student' });

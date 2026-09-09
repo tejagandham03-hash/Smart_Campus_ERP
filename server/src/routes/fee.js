@@ -16,7 +16,7 @@ router.get('/', protect, getFees);
 router.get('/statistics/overview', protect, authorize(ROLES.ADMIN), getFeeStatistics);
 router.get('/:id', protect, getFee);
 router.post('/', protect, authorize(ROLES.ADMIN, ROLES.FACULTY), createFee);
-router.put('/:id', protect, authorize(ROLES.ADMIN, ROLES.FACULTY), updateFee);
+router.put('/:id', protect, authorize(ROLES.ADMIN, ROLES.FACULTY, ROLES.STUDENT), updateFee);
 router.delete('/:id', protect, authorize(ROLES.ADMIN), deleteFee);
 
 module.exports = router;
