@@ -24,6 +24,8 @@ const FacultyDashboard = () => {
 			} finally { setLoading(false); }
 		};
 		load().catch(() => setLoading(false));
+		window.addEventListener('focus', load);
+		return () => window.removeEventListener('focus', load);
 	}, []);
 
 	const cards = [['Students', counts.students, Users], ['Subjects', counts.subjects, BookOpen], ['Examinations', counts.examinations, ClipboardCheck], ['Scheduled classes', counts.timetable, CalendarDays]];

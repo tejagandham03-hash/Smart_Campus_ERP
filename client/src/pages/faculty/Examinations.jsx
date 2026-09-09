@@ -6,21 +6,25 @@ import FacultyNavbar from '../../components/common/FacultyNavbar';
 
 const semesters = [1, 2, 3, 4, 5, 6];
 const templateHeaders = ['Student ID', 'Student Name', 'Marks', 'Max Marks', 'Remarks'];
+const emptyExamination = { name: '', course: '', subject: '', semester: '', date: '', startTime: '', endTime: '', room: '', totalMarks: 100 };
 
 const FacultyExaminations = () => {
   const [examinations, setExaminations] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
+  const [examinationForm, setExaminationForm] = useState(emptyExamination);
   const [selection, setSelection] = useState({ examination: '', subject: '', semester: '' });
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    Promise.all([API.get('/examinations'), API.get('/subjects')])
-      .then(([examResponse, subjectResponse]) => {
+    Promise.all([API.get('/examinations?limit=500'), API.get('/subjects'), API.get('/courses?status=active')])
+      .then(([examResponse, subjectResponse, courseResponse]) => {
         setExaminations(examResponse.data?.data || []);
         setSubjects(subjectResponse.data?.data || []);
+        setCourses(courseResponse.data?.data || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -37,6 +41,19 @@ const FacultyExaminations = () => {
 
   const updateSelection = (event) => {
     setSelection({ ...selection, [event.target.name]: event.target.value });
+  };
+
+  const createExamination = async (event) => {
+    event.preventDefault();
+    try {
+      await API.post('/examinations', { ...examinationForm, semester: Number(examinationForm.semester), totalMarks: Number(examinationForm.totalMarks) });
+      setExaminationForm(emptyExamination);
+      const response = await API.get('/examinations?limit=500');
+      setExaminations(response.data?.data || []);
+      setMessage('Examination created successfully.');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'The examination could not be created.');
+    }
   };
 
   const downloadTemplate = () => {
@@ -117,6 +134,19 @@ const FacultyExaminations = () => {
           </div>
           {message && <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{message}</p>}
         </section>
+        <form onSubmit={createExamination} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-2">
+          <h2 className="sm:col-span-2 text-lg font-bold">Create examination</h2>
+          <input required placeholder="Examination name" value={examinationForm.name} onChange={(event) => setExaminationForm({ ...examinationForm, name: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <select required value={examinationForm.course} onChange={(event) => setExaminationForm({ ...examinationForm, course: event.target.value, subject: '' })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700"><option value="">Select course</option>{courses.map((course) => <option key={course._id} value={course._id}>{course.code} - {course.name}</option>)}</select>
+          <select required value={examinationForm.subject} onChange={(event) => setExaminationForm({ ...examinationForm, subject: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700"><option value="">Select subject</option>{subjects.filter((subject) => !examinationForm.course || String(subject.course?._id || subject.course) === String(examinationForm.course)).map((subject) => <option key={subject._id} value={subject._id}>{subject.code} - {subject.name}</option>)}</select>
+          <select required value={examinationForm.semester} onChange={(event) => setExaminationForm({ ...examinationForm, semester: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700"><option value="">Select semester</option>{semesters.map((semester) => <option key={semester} value={semester}>Semester {semester}</option>)}</select>
+          <input required type="date" value={examinationForm.date} onChange={(event) => setExaminationForm({ ...examinationForm, date: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <input required type="time" value={examinationForm.startTime} onChange={(event) => setExaminationForm({ ...examinationForm, startTime: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <input required type="time" value={examinationForm.endTime} onChange={(event) => setExaminationForm({ ...examinationForm, endTime: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <input placeholder="Room (optional)" value={examinationForm.room} onChange={(event) => setExaminationForm({ ...examinationForm, room: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <input required type="number" min="1" value={examinationForm.totalMarks} onChange={(event) => setExaminationForm({ ...examinationForm, totalMarks: event.target.value })} className="rounded-lg border border-slate-300 bg-transparent p-2.5 dark:border-slate-700" />
+          <button className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white sm:col-span-2">Create examination</button>
+        </form>
         <section className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-100 text-xs uppercase text-slate-500 dark:bg-slate-950"><tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Course</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{loading ? <tr><td colSpan="5" className="px-4 py-10 text-center text-slate-500">Loading examinations...</td></tr> : examinations.length === 0 ? <tr><td colSpan="5" className="px-4 py-10 text-center text-slate-500">No examinations found in the database.</td></tr> : examinations.map((exam) => <tr key={exam._id}><td className="px-4 py-3 font-semibold">{exam.name || exam.title || '-'}</td><td className="px-4 py-3">{exam.type || '-'}</td><td className="px-4 py-3">{exam.course?.name || '-'}</td><td className="px-4 py-3">{exam.date ? new Date(exam.date).toLocaleDateString() : '-'}</td><td className="px-4 py-3">{exam.status || '-'}</td></tr>)}</tbody></table>
         </section>

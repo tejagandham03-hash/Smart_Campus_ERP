@@ -13,7 +13,7 @@ const { ROLES } = require('../config/constants');
 
 router.get('/', protect, getExaminations);
 router.get('/:id', protect, getExamination);
-router.post('/', protect, authorize(ROLES.ADMIN), createExamination);
+router.post('/', protect, authorize(ROLES.ADMIN, ROLES.FACULTY), createExamination);
 router.put('/:id', protect, authorize(ROLES.ADMIN), updateExamination);
 router.delete('/:id', protect, authorize(ROLES.ADMIN), deleteExamination);
 
