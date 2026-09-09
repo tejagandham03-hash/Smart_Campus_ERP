@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { ROLES } = require('./config/constants');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());
